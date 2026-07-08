@@ -43,4 +43,5 @@ export interface StoreConfig {
   address: string;
   currencySymbol: string;
   taxRate: number; // in percentage, e.g., 10 for 10%
+  adminPassword?: string;
 }

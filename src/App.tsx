@@ -7,6 +7,7 @@ import ProductCard from './components/ProductCard';
 import ProductModal from './components/ProductModal';
 import CartDrawer from './components/CartDrawer';
 import AdminPanel from './components/AdminPanel';
+import AdminLogin from './components/AdminLogin';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, MessageCircle, ArrowRight, RefreshCw, Layers } from 'lucide-react';
 
@@ -110,6 +111,7 @@ export default function App() {
 
   // --- UI/UX Interactive State ---
   const [currentView, setCurrentView] = useState<'webstore' | 'admin'>('webstore');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -515,8 +517,14 @@ export default function App() {
             </section>
 
           </div>
+        ) : !isAdminAuthenticated ? (
+          /* VIEW 2: MERCHANT ADMIN LOGIN FORM */
+          <AdminLogin
+            storeConfig={storeConfig}
+            onLoginSuccess={() => setIsAdminAuthenticated(true)}
+          />
         ) : (
-          /* VIEW 2: MERCHANT ADMIN & POINT OF SALE DASHBOARD */
+          /* VIEW 3: MERCHANT ADMIN & POINT OF SALE DASHBOARD */
           <AdminPanel
             products={products}
             orders={orders}
@@ -529,6 +537,10 @@ export default function App() {
             onUpdateOrder={handleUpdateOrder}
             onDeleteOrder={handleDeleteOrder}
             onResetProducts={handleResetProducts}
+            onLogout={() => {
+              setIsAdminAuthenticated(false);
+              setCurrentView('webstore');
+            }}
           />
         )}
       </main>

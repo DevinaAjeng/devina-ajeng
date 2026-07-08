@@ -24,7 +24,8 @@ import {
   X,
   CreditCard,
   QrCode,
-  FileText
+  FileText,
+  LogOut
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -39,6 +40,7 @@ interface AdminPanelProps {
   onUpdateOrder: (order: Order) => void;
   onDeleteOrder: (id: string) => void;
   onResetProducts: () => void;
+  onLogout?: () => void;
 }
 
 export default function AdminPanel({
@@ -53,6 +55,7 @@ export default function AdminPanel({
   onUpdateOrder,
   onDeleteOrder,
   onResetProducts,
+  onLogout,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'pos' | 'products' | 'orders' | 'settings'>('dashboard');
 
@@ -93,6 +96,7 @@ export default function AdminPanel({
   const [setWaNumber, setSetWaNumber] = useState(storeConfig.whatsappNumber);
   const [setAddress, setSetAddress] = useState(storeConfig.address);
   const [setTaxRate, setSetTaxRate] = useState(storeConfig.taxRate);
+  const [setAdminPassword, setSetAdminPassword] = useState(storeConfig.adminPassword || 'admin123');
 
   // Sync settings inputs when prop updates
   useEffect(() => {
@@ -100,6 +104,7 @@ export default function AdminPanel({
     setSetWaNumber(storeConfig.whatsappNumber);
     setSetAddress(storeConfig.address);
     setSetTaxRate(storeConfig.taxRate);
+    setSetAdminPassword(storeConfig.adminPassword || 'admin123');
   }, [storeConfig]);
 
   // CATEGORIES extracted dynamically
@@ -357,7 +362,8 @@ export default function AdminPanel({
       whatsappNumber: setWaNumber,
       address: setAddress,
       currencySymbol: 'Rp',
-      taxRate: Number(setTaxRate)
+      taxRate: Number(setTaxRate),
+      adminPassword: setAdminPassword,
     });
     alert('Pengaturan toko berhasil diperbarui!');
   };
@@ -457,6 +463,17 @@ export default function AdminPanel({
             <Settings className="h-4 w-4 flex-shrink-0" />
             Pengaturan Toko
           </button>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:bg-red-950/40 hover:text-red-400 mt-6 border-t border-slate-800/40 pt-5"
+              id="btn-logout-admin"
+            >
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              Keluar Admin
+            </button>
+          )}
         </nav>
 
         {/* Sidebar Footer */}
@@ -1472,6 +1489,19 @@ export default function AdminPanel({
                       onChange={e => setSetAddress(e.target.value)}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-hidden resize-none"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Password Admin Baru (Login POS)</label>
+                    <input
+                      type="text"
+                      required
+                      value={setAdminPassword}
+                      onChange={e => setSetAdminPassword(e.target.value)}
+                      placeholder="admin123"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-hidden"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">Sandi bawaan adalah "admin123". Ubah password ini demi keamanan data Anda.</span>
                   </div>
 
                   <button
