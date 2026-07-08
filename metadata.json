@@ -1,0 +1,6 @@
+{
+  "name": "DEV Store",
+  "description": "Marketplace dan Point of Sale (POS) terintegrasi untuk UMKM baju wanita, lengkap dengan katalog, keranjang WhatsApp, dan panel admin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
