@@ -39,7 +39,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Pashmina Silk Premium',
     price: 65000,
     description: 'Pashmina satin silk premium dengan kilau mewah yang elegan dan bertekstur lembut. Mudah dibentuk, tegak di dahi, dan tidak licin. Sangat cocok dipadukan dengan gaun pesta maupun pakaian formal harian.',
-    image: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=800&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80',
     category: 'Hijab',
     stock: 50,
     sizes: ['Standar'],

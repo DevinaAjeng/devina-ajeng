@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Products collection: Allow public read and write so guests and POS admins can query/add/update/delete inventory
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+
+    // Orders collection: Allow public read and write so guests can checkout and POS admins can view and update orders
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+
+    // Config collection: Allow public read and write so the store setup and password can be fetched and updated
+    match /config/{configId} {
+      allow read, write: if true;
+    }
+  }
+}

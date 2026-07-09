@@ -10,6 +10,8 @@ import AdminPanel from './components/AdminPanel';
 import AdminLogin from './components/AdminLogin';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, MessageCircle, ArrowRight, RefreshCw, Layers } from 'lucide-react';
+import { db, handleFirestoreError, OperationType } from './lib/firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
 
 const LOCAL_STORAGE_PRODUCTS_KEY = 'devstore_products_v2';
 const LOCAL_STORAGE_ORDERS_KEY = 'devstore_orders_v1';
@@ -120,105 +122,157 @@ export default function App() {
   const [selectedCatalogCategory, setSelectedCatalogCategory] = useState('Semua');
   const [catalogSearchQuery, setCatalogSearchQuery] = useState('');
 
-  // 1. Initial Load: Retrieve or provision databases
+  // 1. Initial Load: Real-time Sync with Firestore database
   useEffect(() => {
-    // Products Load
-    const savedProducts = localStorage.getItem(LOCAL_STORAGE_PRODUCTS_KEY);
-    if (savedProducts) {
-      try {
-        setProducts(JSON.parse(savedProducts));
-      } catch (e) {
-        setProducts(INITIAL_PRODUCTS);
-      }
-    } else {
-      setProducts(INITIAL_PRODUCTS);
-      localStorage.setItem(LOCAL_STORAGE_PRODUCTS_KEY, JSON.stringify(INITIAL_PRODUCTS));
-    }
+    // A. Real-time Products Sync
+    const unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const items: Product[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as Product;
+        // Self-heal: If product image is missing, empty, or invalid, restore it from INITIAL_PRODUCTS
+        // Also self-heal if it is using the old fabric-only image for the pashmina product
+        const isOldPashminaImage = data.id === 'prod-4' && data.image === 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=800&auto=format&fit=crop&q=80';
+        if (!data.image || typeof data.image !== 'string' || !data.image.startsWith('http') || isOldPashminaImage) {
+          const originalProd = INITIAL_PRODUCTS.find(p => p.id === data.id);
+          data.image = originalProd?.image || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80';
+          // Save the healed document back to Firestore
+          setDoc(doc(db, 'products', data.id), data).catch((err) => {
+            console.error("Error healing product image in Firestore:", err);
+          });
+        }
+        items.push(data);
+      });
 
-    // Orders Load
-    const savedOrders = localStorage.getItem(LOCAL_STORAGE_ORDERS_KEY);
-    if (savedOrders) {
-      try {
-        setOrders(JSON.parse(savedOrders));
-      } catch (e) {
-        setOrders(getMockOrders());
+      if (items.length === 0) {
+        // Seed the products if totally empty
+        INITIAL_PRODUCTS.forEach(async (prod) => {
+          await setDoc(doc(db, 'products', prod.id), prod);
+        });
+      } else {
+        // Sort products by id to keep a stable visual order
+        items.sort((a, b) => a.id.localeCompare(b.id));
+        setProducts(items);
       }
-    } else {
-      const defaultMock = getMockOrders();
-      setOrders(defaultMock);
-      localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(defaultMock));
-    }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'products');
+    });
 
-    // Store Configuration Load
-    const savedConfig = localStorage.getItem(LOCAL_STORAGE_CONFIG_KEY);
-    if (savedConfig) {
-      try {
-        setStoreConfig(JSON.parse(savedConfig));
-      } catch (e) {
-        setStoreConfig(DEFAULT_STORE_CONFIG);
+    // B. Real-time Orders Sync
+    const unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+      const items: Order[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as Order);
+      });
+
+      if (items.length === 0) {
+        // Seed mock orders
+        const mockOrders = getMockOrders();
+        mockOrders.forEach(async (order) => {
+          await setDoc(doc(db, 'orders', order.id), order);
+        });
+      } else {
+        // Sort orders by date descending so newest are on top
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setOrders(items);
       }
-    } else {
-      setStoreConfig(DEFAULT_STORE_CONFIG);
-      localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(DEFAULT_STORE_CONFIG));
-    }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+    });
+
+    // C. Real-time Store Config Sync
+    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'settings'), (docSnap) => {
+      if (docSnap.exists()) {
+        setStoreConfig(docSnap.data() as StoreConfig);
+      } else {
+        // Seed default config
+        setDoc(doc(db, 'config', 'settings'), DEFAULT_STORE_CONFIG);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'config/settings');
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeProducts();
+      unsubscribeOrders();
+      unsubscribeConfig();
+    };
   }, []);
-
-  // Sync state writes to LocalStorage
-  const updateAndPersistProducts = (updatedProducts: Product[]) => {
-    setProducts(updatedProducts);
-    localStorage.setItem(LOCAL_STORAGE_PRODUCTS_KEY, JSON.stringify(updatedProducts));
-  };
-
-  const updateAndPersistOrders = (updatedOrders: Order[]) => {
-    setOrders(updatedOrders);
-    localStorage.setItem(LOCAL_STORAGE_ORDERS_KEY, JSON.stringify(updatedOrders));
-  };
-
-  const updateAndPersistConfig = (updatedConfig: StoreConfig) => {
-    setStoreConfig(updatedConfig);
-    localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(updatedConfig));
-  };
 
   // --- Callback handlers ---
 
-  const handleUpdateStoreConfig = (config: StoreConfig) => {
-    updateAndPersistConfig(config);
+  const handleUpdateStoreConfig = async (config: StoreConfig) => {
+    try {
+      await setDoc(doc(db, 'config', 'settings'), config);
+    } catch (e) {
+      console.error("Error updating config:", e);
+    }
   };
 
-  const handleResetProducts = () => {
-    updateAndPersistProducts(INITIAL_PRODUCTS);
+  const handleResetProducts = async () => {
+    try {
+      // Delete existing products
+      const querySnapshot = await getDocs(collection(db, 'products'));
+      for (const docSnap of querySnapshot.docs) {
+        await deleteDoc(doc(db, 'products', docSnap.id));
+      }
+      // Re-seed products
+      for (const prod of INITIAL_PRODUCTS) {
+        await setDoc(doc(db, 'products', prod.id), prod);
+      }
+    } catch (e) {
+      console.error("Error resetting products:", e);
+    }
   };
 
   // Products CRUD
-  const handleAddProduct = (newProd: Product) => {
-    const updated = [newProd, ...products];
-    updateAndPersistProducts(updated);
+  const handleAddProduct = async (newProd: Product) => {
+    try {
+      await setDoc(doc(db, 'products', newProd.id), newProd);
+    } catch (e) {
+      console.error("Error adding product:", e);
+    }
   };
 
-  const handleUpdateProduct = (updatedProd: Product) => {
-    const updated = products.map(p => (p.id === updatedProd.id ? updatedProd : p));
-    updateAndPersistProducts(updated);
+  const handleUpdateProduct = async (updatedProd: Product) => {
+    try {
+      await setDoc(doc(db, 'products', updatedProd.id), updatedProd);
+    } catch (e) {
+      console.error("Error updating product:", e);
+    }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    const updated = products.filter(p => p.id !== id);
-    updateAndPersistProducts(updated);
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (e) {
+      console.error("Error deleting product:", e);
+    }
   };
 
   // Orders CRUD
-  const handleAddOrder = (newOrder: Order) => {
-    const updated = [newOrder, ...orders];
-    updateAndPersistOrders(updated);
+  const handleAddOrder = async (newOrder: Order) => {
+    try {
+      await setDoc(doc(db, 'orders', newOrder.id), newOrder);
+    } catch (e) {
+      console.error("Error adding order:", e);
+    }
   };
 
-  const handleUpdateOrder = (updatedOrder: Order) => {
-    const updated = orders.map(o => (o.id === updatedOrder.id ? updatedOrder : o));
-    updateAndPersistOrders(updated);
+  const handleUpdateOrder = async (updatedOrder: Order) => {
+    try {
+      await setDoc(doc(db, 'orders', updatedOrder.id), updatedOrder);
+    } catch (e) {
+      console.error("Error updating order:", e);
+    }
   };
 
-  const handleDeleteOrder = (id: string) => {
-    const updated = orders.filter(o => o.id !== id);
-    updateAndPersistOrders(updated);
+  const handleDeleteOrder = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'orders', id));
+    } catch (e) {
+      console.error("Error deleting order:", e);
+    }
   };
 
   // --- Client Cart Handling ---
@@ -278,7 +332,7 @@ export default function App() {
   };
 
   // Checkout process: records PENDING online order and updates catalog stock
-  const handleCheckout = (customerName: string, customerAddress: string) => {
+  const handleCheckout = async (customerName: string, customerAddress: string) => {
     if (cart.length === 0) return;
 
     // Calculate total
@@ -308,21 +362,20 @@ export default function App() {
     };
 
     // 1. Log online transaction in database
-    handleAddOrder(newOrder);
+    await handleAddOrder(newOrder);
 
     // 2. Reduce products stock
-    const updatedProducts = products.map(p => {
+    for (const p of products) {
       const cartItemsForThisProduct = cart.filter(item => item.product.id === p.id);
       if (cartItemsForThisProduct.length > 0) {
         const totalPurchased = cartItemsForThisProduct.reduce((sum, item) => sum + item.quantity, 0);
-        return {
+        const updatedProduct = {
           ...p,
           stock: Math.max(0, p.stock - totalPurchased),
         };
+        await handleUpdateProduct(updatedProduct);
       }
-      return p;
-    });
-    updateAndPersistProducts(updatedProducts);
+    }
 
     // 3. Clear shopping cart
     setCart([]);
