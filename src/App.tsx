@@ -13,6 +13,12 @@ import { Sparkles, MessageCircle, ArrowRight, RefreshCw, Layers } from 'lucide-r
 import { db, handleFirestoreError, OperationType } from './lib/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
 
+// Import local images so Vite can bundle them and generate correct production URLs
+// @ts-ignore
+import dressModel from './assets/images/dress_model_1783601120735.jpg';
+// @ts-ignore
+import knitwearModel from './assets/images/knitwear_model_1783601135331.jpg';
+
 const LOCAL_STORAGE_PRODUCTS_KEY = 'devstore_products_v2';
 const LOCAL_STORAGE_ORDERS_KEY = 'devstore_orders_v1';
 const LOCAL_STORAGE_CONFIG_KEY = 'devstore_config_v1';
@@ -494,7 +500,7 @@ export default function App() {
                 <div className="hidden md:flex justify-end relative h-72">
                   <div className="w-52 h-64 rounded-2xl bg-gray-100 border-4 border-white shadow-xl overflow-hidden rotate-[-4deg] absolute right-32 top-0 z-10 hover:rotate-0 transition-transform duration-300">
                     <img
-                      src="/src/assets/images/dress_model_1783601120735.jpg"
+                      src={dressModel}
                       alt="Women dress model"
                       className="h-full w-full object-cover object-top"
                       referrerPolicy="no-referrer"
@@ -506,7 +512,7 @@ export default function App() {
                   </div>
                   <div className="w-48 h-60 rounded-2xl bg-gray-100 border-4 border-white shadow-lg overflow-hidden rotate-[6deg] absolute right-8 top-6 hover:rotate-0 transition-transform duration-300">
                     <img
-                      src="/src/assets/images/knitwear_model_1783601135331.jpg"
+                      src={knitwearModel}
                       alt="Women knit model"
                       className="h-full w-full object-cover object-top"
                       referrerPolicy="no-referrer"
