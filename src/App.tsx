@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Product, CartItem, Order, StoreConfig } from './types';
+import { Product, CartItem, Order, StoreConfig, UserProfile, UserRole } from './types';
 import { INITIAL_PRODUCTS, CATEGORIES } from './constants/initialProducts';
 import { generateId } from './utils';
 import Navbar from './components/Navbar';
@@ -111,6 +111,34 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [storeConfig, setStoreConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG);
 
+  // --- User Profile & Role State ---
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('devstore_user_profile');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (_) {}
+    }
+    return {
+      name: 'Tamu Cantik',
+      phone: '',
+      role: 'CUSTOMER' as UserRole,
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+    };
+  });
+
+  // Save profile changes and control permissions dynamically
+  const handleUpdateProfile = (profile: UserProfile) => {
+    setUserProfile(profile);
+    localStorage.setItem('devstore_user_profile', JSON.stringify(profile));
+    
+    if (profile.role === 'CUSTOMER') {
+      setIsAdminAuthenticated(false);
+    } else {
+      setIsAdminAuthenticated(true);
+    }
+  };
+
   // --- UI/UX Interactive State ---
   const [currentView, setCurrentView] = useState<'webstore' | 'admin'>('webstore');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -129,16 +157,26 @@ export default function App() {
       const items: Product[] = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as Product;
-        // Self-heal: If product image is missing, empty, or invalid, restore it from INITIAL_PRODUCTS
-        // Also self-heal if it is using the old fabric-only image for the pashmina product
-        const isOldPashminaImage = data.id === 'prod-4' && data.image === 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=800&auto=format&fit=crop&q=80';
-        if (!data.image || typeof data.image !== 'string' || !data.image.startsWith('http') || isOldPashminaImage) {
-          const originalProd = INITIAL_PRODUCTS.find(p => p.id === data.id);
-          data.image = originalProd?.image || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80';
-          // Save the healed document back to Firestore
-          setDoc(doc(db, 'products', data.id), data).catch((err) => {
-            console.error("Error healing product image in Firestore:", err);
-          });
+        // Self-heal: Upgrade old Unsplash placeholder URLs or outdated products to the beautiful custom generated ones
+        const isUnsplashUrl = typeof data.image === 'string' && data.image.startsWith('https://images.unsplash.com');
+        const isInvalidImage = !data.image || typeof data.image !== 'string' || (!data.image.startsWith('http') && !data.image.startsWith('/src/'));
+        const originalProd = INITIAL_PRODUCTS.find(p => p.id === data.id);
+        const isOutdatedProduct = originalProd && (data.image !== originalProd.image || data.name !== originalProd.name);
+        
+        if (isUnsplashUrl || isInvalidImage || isOutdatedProduct) {
+          if (originalProd) {
+            data.name = originalProd.name;
+            data.price = originalProd.price;
+            data.description = originalProd.description;
+            data.image = originalProd.image;
+            data.category = originalProd.category;
+            data.sizes = originalProd.sizes;
+            data.colors = originalProd.colors;
+            // Save the healed document back to Firestore
+            setDoc(doc(db, 'products', data.id), data).catch((err) => {
+              console.error("Error healing product in Firestore:", err);
+            });
+          }
         }
         items.push(data);
       });
@@ -398,6 +436,9 @@ export default function App() {
         cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)}
         onOpenCart={() => setIsCartOpen(true)}
         storeConfig={storeConfig}
+        userProfile={userProfile}
+        onChangeProfile={handleUpdateProfile}
+        orders={orders}
       />
 
       {/* Main Container Views switcher */}
@@ -591,9 +632,14 @@ export default function App() {
             onDeleteOrder={handleDeleteOrder}
             onResetProducts={handleResetProducts}
             onLogout={() => {
-              setIsAdminAuthenticated(false);
+              // Reset profile to CUSTOMER on logout
+              handleUpdateProfile({
+                ...userProfile,
+                role: 'CUSTOMER'
+              });
               setCurrentView('webstore');
             }}
+            userProfile={userProfile}
           />
         )}
       </main>
@@ -644,6 +690,7 @@ export default function App() {
         onRemoveItem={handleRemoveCartItem}
         onCheckout={handleCheckout}
         storeConfig={storeConfig}
+        userProfile={userProfile}
       />
     </div>
   );

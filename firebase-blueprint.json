@@ -54,6 +54,18 @@
         "adminPassword": { "type": "string" }
       },
       "required": ["storeName", "whatsappNumber", "address", "currencySymbol", "taxRate"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["OWNER", "ADMIN", "CASHIER", "CUSTOMER"] },
+        "avatarUrl": { "type": "string" }
+      },
+      "required": ["name", "phone", "role"]
     }
   },
   "firestore": {
@@ -68,6 +80,10 @@
     "/config/settings": {
       "schema": "StoreConfig",
       "description": "Store setting configurations"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Registered user profiles"
     }
   }
 }

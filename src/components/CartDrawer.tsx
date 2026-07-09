@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CartItem, StoreConfig } from '../types';
+import React, { useState, useEffect } from 'react';
+import { CartItem, StoreConfig, UserProfile } from '../types';
 import { formatRupiah, formatWhatsappMessage, getWhatsappUrl } from '../utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Plus, Minus, Send, ShoppingBag } from 'lucide-react';
@@ -12,6 +12,7 @@ interface CartDrawerProps {
   onRemoveItem: (index: number) => void;
   onCheckout: (customerName: string, customerAddress: string) => void;
   storeConfig: StoreConfig;
+  userProfile: UserProfile;
 }
 
 export default function CartDrawer({
@@ -22,10 +23,18 @@ export default function CartDrawer({
   onRemoveItem,
   onCheckout,
   storeConfig,
+  userProfile,
 }: CartDrawerProps) {
   const [customerName, setCustomerName] = useState<string>('');
   const [customerAddress, setCustomerAddress] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
+
+  // Pre-fill profile name if it's set and not the generic placeholder
+  useEffect(() => {
+    if (userProfile && userProfile.name && userProfile.name !== 'Tamu Cantik') {
+      setCustomerName(userProfile.name);
+    }
+  }, [userProfile]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const tax = (subtotal * storeConfig.taxRate) / 100;

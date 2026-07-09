@@ -35,6 +35,7 @@ export interface Order {
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   cashReceived?: number;
   changeAmount?: number;
+  paymentMethod?: 'CASH' | 'QRIS' | 'TRANSFER';
 }
 
 export interface StoreConfig {
@@ -45,3 +46,13 @@ export interface StoreConfig {
   taxRate: number; // in percentage, e.g., 10 for 10%
   adminPassword?: string;
 }
+
+export type UserRole = 'OWNER' | 'ADMIN' | 'CASHIER' | 'CUSTOMER';
+
+export interface UserProfile {
+  name: string;
+  phone: string;
+  role: UserRole;
+  avatarUrl?: string;
+}
+

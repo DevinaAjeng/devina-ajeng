@@ -1,5 +1,6 @@
 import { ShoppingCart, ShieldAlert, Store } from 'lucide-react';
-import { StoreConfig } from '../types';
+import { StoreConfig, UserProfile, Order } from '../types';
+import UserMenu from './UserMenu';
 
 interface NavbarProps {
   currentView: 'webstore' | 'admin';
@@ -7,9 +8,21 @@ interface NavbarProps {
   cartCount: number;
   onOpenCart: () => void;
   storeConfig: StoreConfig;
+  userProfile: UserProfile;
+  onChangeProfile: (profile: UserProfile) => void;
+  orders: Order[];
 }
 
-export default function Navbar({ currentView, onChangeView, cartCount, onOpenCart, storeConfig }: NavbarProps) {
+export default function Navbar({ 
+  currentView, 
+  onChangeView, 
+  cartCount, 
+  onOpenCart, 
+  storeConfig,
+  userProfile,
+  onChangeProfile,
+  orders
+}: NavbarProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 shadow-2xs">
       <div className="mx-auto flex max-w-7xl h-16 items-center justify-between">
@@ -20,9 +33,18 @@ export default function Navbar({ currentView, onChangeView, cartCount, onOpenCar
             D
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-black uppercase tracking-widest text-gray-900 leading-tight">
-              {storeConfig.storeName}
-            </h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-base font-black uppercase tracking-widest text-gray-900 leading-tight">
+                {storeConfig.storeName}
+              </h1>
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 rounded-full border border-emerald-100 text-[9px] font-bold text-emerald-600 shadow-3xs">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                Real DB
+              </div>
+            </div>
             <span className="text-[10px] font-medium tracking-wider text-rose-500 uppercase">
               Baju Wanita Premium
             </span>
@@ -74,6 +96,15 @@ export default function Navbar({ currentView, onChangeView, cartCount, onOpenCar
               )}
             </button>
           )}
+
+          {/* Integrated High-Fidelity User & Role Menu */}
+          <UserMenu
+            userProfile={userProfile}
+            onChangeProfile={onChangeProfile}
+            orders={orders}
+            onSwitchView={onChangeView}
+            currentView={currentView}
+          />
 
         </div>
 
