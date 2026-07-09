@@ -494,25 +494,25 @@ export default function App() {
                 <div className="hidden md:flex justify-end relative h-72">
                   <div className="w-52 h-64 rounded-2xl bg-gray-100 border-4 border-white shadow-xl overflow-hidden rotate-[-4deg] absolute right-32 top-0 z-10 hover:rotate-0 transition-transform duration-300">
                     <img
-                      src="https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500&auto=format&fit=crop&q=80"
+                      src="/src/assets/images/dress_model_1783601120735.jpg"
                       alt="Women dress model"
                       className="h-full w-full object-cover object-top"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80';
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=850&auto=format&fit=crop&q=80';
                       }}
                     />
                   </div>
                   <div className="w-48 h-60 rounded-2xl bg-gray-100 border-4 border-white shadow-lg overflow-hidden rotate-[6deg] absolute right-8 top-6 hover:rotate-0 transition-transform duration-300">
                     <img
-                      src="https://images.unsplash.com/photo-1614975058789-41316d0e2e9c?w=500&auto=format&fit=crop&q=80"
+                      src="/src/assets/images/knitwear_model_1783601135331.jpg"
                       alt="Women knit model"
                       className="h-full w-full object-cover object-top"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&auto=format&fit=crop&q=80';
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1614975058789-41316d0e2e9c?w=850&auto=format&fit=crop&q=80';
                       }}
                     />
                   </div>
