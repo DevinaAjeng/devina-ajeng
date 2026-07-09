@@ -165,7 +165,8 @@ export default function App() {
         const data = docSnap.data() as Product;
         // Self-heal: Upgrade old Unsplash placeholder URLs or outdated products to the beautiful custom generated ones
         const isUnsplashUrl = typeof data.image === 'string' && data.image.startsWith('https://images.unsplash.com');
-        const isInvalidImage = !data.image || typeof data.image !== 'string' || (!data.image.startsWith('http') && !data.image.startsWith('/src/'));
+        const isInvalidImage = !data.image || typeof data.image !== 'string' || 
+          (!data.image.startsWith('http') && !data.image.startsWith('/src/') && !data.image.startsWith('/assets/') && !data.image.startsWith('data:'));
         const originalProd = INITIAL_PRODUCTS.find(p => p.id === data.id);
         const isOutdatedProduct = originalProd && (data.image !== originalProd.image || data.name !== originalProd.name);
         
